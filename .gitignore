@@ -1,0 +1,22 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+.env/
+
+# Local data artifacts
+/data/
+!data/.gitkeep
+
+# IDE and editor metadata
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
