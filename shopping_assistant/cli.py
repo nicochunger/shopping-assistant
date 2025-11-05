@@ -5,7 +5,8 @@ CLI entrypoint for the conversational shopping assistant.
 from __future__ import annotations
 
 import sys
-from typing import Optional
+from contextlib import contextmanager
+from typing import Iterator, Optional
 
 import typer
 from rich.console import Console
@@ -20,6 +21,12 @@ from .research import ProductRecommendation, ResearchAgent
 
 app = typer.Typer(add_completion=False, help="Conversational shopping assistant.")
 console = Console()
+
+
+@contextmanager
+def _llm_status(message: str) -> Iterator[None]:
+    with console.status(message, spinner="dots", spinner_style="magenta"):
+        yield
 
 
 def _handle_clarification(
@@ -40,7 +47,8 @@ def _handle_clarification(
     )
 
     while True:
-        question = clarifier.next_question(state)
+        with _llm_status("[bold magenta]Thinking about the next question...[/]"):
+            question = clarifier.next_question(state)
         if question is None:
             break
 
@@ -174,15 +182,18 @@ def run_chat(
     )
 
     try:
-        queries = research_agent.craft_search_queries(
-            clarification_state.topic, clarification_state.summary or ""
-        )
-        research = research_agent.collect_research(queries)
-        result = research_agent.recommend_products(
-            clarification_state.topic,
-            clarification_state.summary or "",
-            research,
-        )
+        with _llm_status("[bold blue]Drafting smart search queries...[/]"):
+            queries = research_agent.craft_search_queries(
+                clarification_state.topic, clarification_state.summary or ""
+            )
+        with _llm_status("[bold blue]Gathering fresh product listings...[/]"):
+            research = research_agent.collect_research(queries)
+        with _llm_status("[bold blue]Comparing options for best value...[/]"):
+            result = research_agent.recommend_products(
+                clarification_state.topic,
+                clarification_state.summary or "",
+                research,
+            )
     except Exception as exc:  # noqa: BLE001 - surfaced directly to CLI
         console.print(f"[red]Search or recommendation failed: {exc}[/]")
         raise typer.Exit(code=1) from exc
