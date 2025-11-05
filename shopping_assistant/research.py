@@ -105,6 +105,8 @@ class ResearchAgent:
         Respond with JSON: {"queries": [string, ...]}
         - Provide between 2 and 4 distinct queries.
         - Blend feature-specific and buyer-intent keywords.
+        - Prioritize Swiss retailers or Switzerland-based stores.
+        - Emphasize finding strong value-for-money options.
         - Avoid redundant variations.
     """
 
@@ -114,6 +116,8 @@ class ResearchAgent:
 
         Requirements:
         - Recommend {count} products.
+        - Favor products sold by Swiss retailers or shipping from Switzerland.
+        - Highlight options that deliver the best value for money.
         - For each, provide "name", "url", "why_it_fits" (<=120 words),
           "highlights" (3 bullet strings), "watchouts" (1-2 bullet strings)
           and "best_for" (short persona style description).
@@ -196,6 +200,7 @@ class ResearchAgent:
             {research_text}
 
             Provide {self._settings.recommendation_count} top options.
+            Focus on Swiss retailers and emphasize best value for money picks.
             """
         ).strip()
 
