@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+shopping_assistant/__init__.py
+shopping_assistant/clarifier.py
+shopping_assistant/cli.py
+shopping_assistant/config.py
+shopping_assistant/llm.py
+shopping_assistant/research.py
+shopping_assistant.egg-info/PKG-INFO
+shopping_assistant.egg-info/SOURCES.txt
+shopping_assistant.egg-info/dependency_links.txt
+shopping_assistant.egg-info/entry_points.txt
+shopping_assistant.egg-info/requires.txt
+shopping_assistant.egg-info/top_level.txt

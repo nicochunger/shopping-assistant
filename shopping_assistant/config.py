@@ -1,27 +1,51 @@
-"""Application configuration constants."""
+"""
+Configuration loading for the shopping assistant via environment variables.
+"""
+
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass
+from functools import lru_cache
+from typing import Optional
+
+from pydantic import Field, ValidationError
+from pydantic_settings import BaseSettings
 
 
-@dataclass(frozen=True)
-class ModelCatalog:
-    primary: str = os.getenv("PRIMARY_MODEL", "gpt-5")
-    fast: str = os.getenv("FAST_MODEL", "gpt-5-mini")
-    embeddings: str = os.getenv("EMBEDDINGS_MODEL", "text-embedding-3-large")
-    moderation: str = os.getenv("MODERATION_MODEL", "omni-moderation-latest")
-    transcription: str = os.getenv("TRANSCRIPTION_MODEL", "whisper-1")
+class Settings(BaseSettings):
+    """
+    Application configuration loaded from environment variables.
+    """
+
+    openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
+    tavily_api_key: Optional[str] = Field(default=None, alias="TAVILY_API_KEY")
+    tavily_search_depth: str = Field(default="advanced", alias="TAVILY_SEARCH_DEPTH")
+    clarification_question_limit: int = Field(
+        default=6, alias="ASSISTANT_MAX_QUESTIONS"
+    )
+    recommendation_count: int = Field(
+        default=3, alias="ASSISTANT_RECOMMENDATION_COUNT"
+    )
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        populate_by_name = True
+        extra = "ignore"
 
 
-def get_model_catalog() -> ModelCatalog:
-    """Return configured model catalog."""
-    return ModelCatalog()
+@lru_cache()
+def get_settings() -> Settings:
+    """
+    Load settings once for the lifetime of the process.
+    """
 
-
-DATA_DIR = os.getenv("SHOPPING_ASSISTANT_DATA", "data")
-MEMORY_FILE = os.path.join(DATA_DIR, "memory.json")
-PRODUCT_CACHE_DIR = os.path.join(DATA_DIR, "product_cache")
-
-DEFAULT_SEARCH_RETAILERS = ["digitec", "galaxus"]
-DEFAULT_MAX_PRODUCTS = int(os.getenv("MAX_PRODUCTS", "20"))
+    try:
+        return Settings()
+    except ValidationError as exc:  # pragma: no cover - configuration errors surface early
+        missing = {err["loc"][0] for err in exc.errors() if err["type"] == "missing"}
+        message = (
+            "Missing required configuration: "
+            + ", ".join(sorted(name.upper() for name in missing))
+        )
+        raise RuntimeError(message) from exc

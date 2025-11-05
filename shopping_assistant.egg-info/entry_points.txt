@@ -1,0 +1,2 @@
+[console_scripts]
+shopping-assistant = shopping_assistant.cli:app
