@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Dict, Iterable, List, Sequence
+from typing import Dict, List, Sequence
+from urllib.parse import urlparse
 
 from tavily import TavilyClient
 
@@ -211,12 +212,20 @@ class ResearchAgent:
             [{"role": "user", "content": prompt}],
         )
 
-        recommendations = []
+        allowed_urls = self._collect_source_urls(research)
+        recommendations: List[ProductRecommendation] = []
+        discarded = 0
         for item in payload.get("recommendations", []):
+            raw_url = item.get("url", "")
+            normalized_url = self._normalise_url(raw_url)
+            if allowed_urls and (not normalized_url or normalized_url not in allowed_urls):
+                discarded += 1
+                continue
+
             recommendations.append(
                 ProductRecommendation(
                     name=item.get("name", "Unnamed product"),
-                    url=item.get("url", ""),
+                    url=raw_url,
                     why_it_fits=item.get("why_it_fits", ""),
                     highlights=item.get("highlights", []),
                     watchouts=item.get("watchouts", []),
@@ -227,6 +236,7 @@ class ResearchAgent:
         return {
             "recommendations": recommendations,
             "comparison_insight": payload.get("comparison_insight", ""),
+            "discarded_count": discarded,
         }
 
     @staticmethod
@@ -248,3 +258,29 @@ class ResearchAgent:
                 )
             lines.append("")
         return "\n".join(lines).strip()
+
+    @staticmethod
+    def _collect_source_urls(research: Dict[str, List[SearchResult]]) -> set[str]:
+        """Gather canonical URLs from the Tavily payload for verification."""
+
+        sources: set[str] = set()
+        for results in research.values():
+            for result in results:
+                normalized = ResearchAgent._normalise_url(result.url)
+                if normalized:
+                    sources.add(normalized)
+        return sources
+
+    @staticmethod
+    def _normalise_url(url: str) -> str:
+        """Normalize URLs so comparisons ignore trivial variations."""
+
+        if not url:
+            return ""
+        stripped = url.strip()
+        parsed = urlparse(stripped)
+        if not parsed.scheme or not parsed.netloc:
+            return stripped.lower().rstrip("/")
+        path = parsed.path.rstrip("/")
+        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{path}"
+        return normalized.rstrip("/")

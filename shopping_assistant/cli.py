@@ -200,9 +200,15 @@ def run_chat(
 
     recommendations: list[ProductRecommendation] = result.get("recommendations", [])
     comparison: str = result.get("comparison_insight", "")
+    discarded: int = int(result.get("discarded_count") or 0)
     if not recommendations:
         console.print("[yellow]I couldn't assemble confident recommendations this time.[/]")
         raise typer.Exit(code=1)
+
+    if discarded:
+        console.print(
+            f"[yellow]{discarded} suggestion(s) lacked verified product links and were dropped.[/]"
+        )
 
     _render_recommendations(recommendations, comparison)
 
