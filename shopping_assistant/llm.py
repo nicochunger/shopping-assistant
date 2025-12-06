@@ -8,7 +8,7 @@ import json
 from textwrap import dedent
 from typing import Any, Dict, List, Sequence
 
-from openai import OpenAI
+from openai import BadRequestError, OpenAI
 
 from .config import Settings
 
@@ -32,6 +32,7 @@ class LLMClient:
         messages: Sequence[Dict[str, Any]],
         *,
         temperature: float | None = None,
+        response_format: Dict[str, Any] | None = None,
     ) -> str:
         """
         Call the OpenAI chat completions API and return the generated text.
@@ -49,6 +50,8 @@ class LLMClient:
 
         if temperature is not None:
             kwargs["temperature"] = temperature
+        if response_format is not None:
+            kwargs["response_format"] = response_format
 
         response = self._client.chat.completions.create(**kwargs)
 
@@ -73,7 +76,20 @@ class LLMClient:
         Request a JSON response and parse it into a dictionary.
         """
 
-        raw = self.generate(system_prompt, messages, temperature=temperature)
+        response_format = {"type": "json_object"}
+        try:
+            raw = self.generate(
+                system_prompt,
+                messages,
+                temperature=temperature,
+                response_format=response_format,
+            )
+        except BadRequestError as exc:
+            # Some older models do not support structured outputs. Retry without the
+            # response format requirement while still attempting to parse the text.
+            if "response_format" not in str(exc):
+                raise
+            raw = self.generate(system_prompt, messages, temperature=temperature)
         try:
             return json.loads(self._strip_code_fence(raw))
         except json.JSONDecodeError as exc:
