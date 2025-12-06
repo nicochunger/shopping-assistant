@@ -80,11 +80,11 @@ class ClarificationEngine:
         if state.complete:
             return None
 
-        if len(state.turns) >= self._settings.clarification_question_limit:
-            state.complete = True
-            return None
+        reached_limit = len(state.turns) >= self._settings.clarification_question_limit
 
-        user_content = self._build_user_prompt(state)
+        user_content = self._build_user_prompt(
+            state, max_questions_reached=reached_limit
+        )
         result = self._llm.generate_json(
             self.SYSTEM_PROMPT,
             [{"role": "user", "content": user_content}],
@@ -94,13 +94,19 @@ class ClarificationEngine:
         should_continue = bool(result.get("should_continue", False))
         question = result.get("question")
 
+        if reached_limit:
+            state.complete = True
+            return None
+
         if not should_continue or not question:
             state.complete = True
             return None
 
         return question.strip()
 
-    def _build_user_prompt(self, state: ClarificationState) -> str:
+    def _build_user_prompt(
+        self, state: ClarificationState, *, max_questions_reached: bool = False
+    ) -> str:
         """
         Assemble the prompt describing conversation progress for the LLM.
         """
@@ -118,4 +124,14 @@ class ClarificationEngine:
         if state.summary:
             lines.append(f"Current summary: {state.summary}")
         lines.append("Decide whether another clarifying question is needed.")
+        if max_questions_reached:
+            lines.append(
+                "You have reached the maximum question limit. Do not ask another"
+            )
+            lines.append(
+                "question; instead, set should_continue to false and return null"
+            )
+            lines.append(
+                "for the question while delivering the most complete summary possible."
+            )
         return "\n".join(lines).strip()
