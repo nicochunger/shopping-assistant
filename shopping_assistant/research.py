@@ -141,10 +141,16 @@ class ResearchAgent:
         }}
     """
 
-    def __init__(self, llm: LLMClient, settings: Settings) -> None:
+    def __init__(
+        self,
+        llm: LLMClient,
+        settings: Settings,
+        *,
+        search_client: SearchClient | None = None,
+    ) -> None:
         self._llm = llm
         self._settings = settings
-        self._search = SearchClient(settings)
+        self._search = search_client or SearchClient(settings)
 
     def craft_search_queries(
         self, topic: str, shopper_summary: str
