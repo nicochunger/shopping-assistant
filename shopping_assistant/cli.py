@@ -181,13 +181,26 @@ def run_chat(
         )
     )
 
+    queries: list[str] = []
     try:
         with _llm_status("[bold blue]Drafting smart search queries...[/]"):
             queries = research_agent.craft_search_queries(
                 clarification_state.topic, clarification_state.summary or ""
             )
+    except Exception as exc:  # noqa: BLE001 - surfaced directly to CLI
+        console.print(f"[red]Failed to craft search queries: {exc}[/]")
+        raise typer.Exit(code=1) from exc
+
+    try:
         with _llm_status("[bold blue]Gathering fresh product listings...[/]"):
             research = research_agent.collect_research(queries)
+    except Exception as exc:  # noqa: BLE001 - surfaced directly to CLI
+        console.print(f"[red]Failed to collect web research: {exc}[/]")
+        if queries:
+            console.print("[yellow]Queries attempted:[/] " + ", ".join(queries))
+        raise typer.Exit(code=1) from exc
+
+    try:
         with _llm_status("[bold blue]Comparing options for best value...[/]"):
             result = research_agent.recommend_products(
                 clarification_state.topic,
@@ -195,7 +208,9 @@ def run_chat(
                 research,
             )
     except Exception as exc:  # noqa: BLE001 - surfaced directly to CLI
-        console.print(f"[red]Search or recommendation failed: {exc}[/]")
+        console.print(f"[red]Failed to synthesize recommendations: {exc}[/]")
+        if queries:
+            console.print("[yellow]Queries used:[/] " + ", ".join(queries))
         raise typer.Exit(code=1) from exc
 
     recommendations: list[ProductRecommendation] = result.get("recommendations", [])
