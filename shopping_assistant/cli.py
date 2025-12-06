@@ -163,14 +163,14 @@ def run_chat(
         console.print("[red]I need a product or category to get started.[/]")
         raise typer.Exit(code=0)
 
-    clarification_state = _handle_clarification(product, clarifier)
-
     research_agent: ResearchAgent
     try:
         research_agent = ResearchAgent(llm, settings)
     except RuntimeError as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(code=1) from exc
+
+    clarification_state = _handle_clarification(product, clarifier)
 
     console.print()
     console.print(
