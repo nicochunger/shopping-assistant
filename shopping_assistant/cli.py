@@ -145,8 +145,12 @@ def run_chat(
         typer.echo(f"[Configuration error] {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
-    llm = LLMClient(settings)
-    clarifier = ClarificationEngine(llm, settings)
+    clarifier_model = settings.clarification_model or settings.openai_model
+    research_model = settings.research_model or settings.openai_model
+
+    clarifier_llm = LLMClient(settings, model=clarifier_model)
+    research_llm = LLMClient(settings, model=research_model)
+    clarifier = ClarificationEngine(clarifier_llm, settings)
 
     console.print(
         Panel.fit(
@@ -165,7 +169,7 @@ def run_chat(
 
     research_agent: ResearchAgent
     try:
-        research_agent = ResearchAgent(llm, settings)
+        research_agent = ResearchAgent(research_llm, settings)
     except RuntimeError as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(code=1) from exc

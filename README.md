@@ -48,6 +48,8 @@ During the clarification stage, answer naturally. You can type `skip` to move on
 
 ## Configuration Reference
 - `OPENAI_MODEL`: Defaults to `gpt-4o-mini`. Any Responses API-capable OpenAI model ID works.
+- `OPENAI_CLARIFICATION_MODEL`: Defaults to `gpt-5-mini`; used for the rapid Q&A stage.
+- `OPENAI_RESEARCH_MODEL`: Defaults to `gpt-5`; used for crafting searches and recommendations.
 - `ASSISTANT_MAX_QUESTIONS`: Hard cap for clarification turns (default `6`).
 - `ASSISTANT_RECOMMENDATION_COUNT`: Number of options to surface (default `3`).
 - `TAVILY_SEARCH_DEPTH`: `basic` or `advanced` search depth for Tavily (default `advanced`).

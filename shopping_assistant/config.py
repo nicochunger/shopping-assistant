@@ -18,6 +18,12 @@ class Settings(BaseSettings):
 
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
+    clarification_model: str = Field(
+        default="gpt-5-mini", alias="OPENAI_CLARIFICATION_MODEL"
+    )
+    research_model: str = Field(
+        default="gpt-5", alias="OPENAI_RESEARCH_MODEL"
+    )
     tavily_api_key: Optional[str] = Field(default=None, alias="TAVILY_API_KEY")
     tavily_search_depth: str = Field(default="advanced", alias="TAVILY_SEARCH_DEPTH")
     clarification_question_limit: int = Field(

@@ -18,13 +18,13 @@ class LLMClient:
     Thin wrapper around the OpenAI Chat Completions API to simplify structured prompts.
     """
 
-    def __init__(self, settings: Settings) -> None:
-        self._settings = settings
+    def __init__(self, settings: Settings, *, model: str | None = None) -> None:
+        self._model = model or settings.openai_model
         self._client = OpenAI(api_key=settings.openai_api_key)
 
     @property
     def model(self) -> str:
-        return self._settings.openai_model
+        return self._model
 
     def generate(
         self,
